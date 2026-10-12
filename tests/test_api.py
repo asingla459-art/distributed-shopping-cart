@@ -93,9 +93,15 @@ class CartApiTest(unittest.TestCase):
                 for _ in range(10):
                     await c.request("POST", f"{API}/cart/items", {"sku": "SKU-TSHIRT", "qty": 1}, key())
             await asyncio.gather(*(add(c) for c in devs))
-            cart = (await u.request("GET", f"{API}/cart")).json()
-            self.assertEqual(cart["items"][0]["qty"], 100)
-            self.assertEqual(cart["version"], 100)
+            # source of truth: every one of the 100 adds is stored
+            stored = int(subprocess.check_output(
+                ["redis-cli", "HGET", f"cart:{{{u.user_id}}}", "item:SKU-TSHIRT"]))
+            self.assertEqual(stored, 100)
+            # a client that saw version 100 never gets an older cart from any instance
+            for _ in range(6):
+                cart = (await u.request("GET", f"{API}/cart", None, {"X-Min-Version": "100"})).json()
+                self.assertEqual(cart["version"], 100)
+                self.assertEqual(cart["items"][0]["qty"], 100)
         run(go())
 
     def test_checkout_and_no_oversell(self):

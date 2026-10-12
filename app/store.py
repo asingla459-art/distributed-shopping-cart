@@ -144,15 +144,34 @@ class _Entry:
 
 
 class L1Cache:
+    """Instance-local cart cache.
+
+    `_newest` remembers the highest version this instance has heard of for each
+    user (from its own writes or from invalidation messages). A state older than
+    that is never cached or served, so a slow response that arrives after the
+    invalidation of a newer version cannot put a stale cart back into the cache.
+    """
+
+    MAX_TRACKED = 200_000
+
     def __init__(self, ttl: float, enabled: bool = True):
         self.ttl, self.enabled = ttl, enabled
         self._d: dict[str, _Entry] = {}
+        self._newest: dict[str, int] = {}
+
+    def _note(self, uid: str, version: int) -> None:
+        if version > self._newest.get(uid, -1):
+            if len(self._newest) > self.MAX_TRACKED:
+                self._newest.clear()
+                self._d.clear()
+            self._newest[uid] = version
 
     def get(self, uid: str) -> dict | None:
         if not self.enabled:
             return None
         e = self._d.get(uid)
-        if e and time.monotonic() - e.at < self.ttl:
+        if (e and time.monotonic() - e.at < self.ttl
+                and e.state.get("version", 0) >= self._newest.get(uid, -1)):
             METRICS.inc("cart_cache_hits_total")
             return e.state
         METRICS.inc("cart_cache_misses_total")
@@ -161,13 +180,18 @@ class L1Cache:
     def put(self, uid: str, state: dict) -> None:
         if not self.enabled:
             return
+        v = state.get("version", 0)
+        if v < self._newest.get(uid, -1):
+            return  # a newer version already exists somewhere - don't cache this one
         cur = self._d.get(uid)
-        # never replace a newer cached version with an older one
-        if cur and cur.state.get("version", 0) > state.get("version", 0):
+        if cur and cur.state.get("version", 0) > v:
             return
+        self._note(uid, v)
         self._d[uid] = _Entry(state)
 
     def invalidate(self, uid: str, version: int | None = None) -> None:
+        if version is not None:
+            self._note(uid, version)
         cur = self._d.get(uid)
         if cur and (version is None or cur.state.get("version", 0) < version):
             del self._d[uid]
@@ -175,6 +199,7 @@ class L1Cache:
 
     def clear(self) -> None:
         self._d.clear()
+        self._newest.clear()
 
 
 def _parse_cart(flat: list | None) -> dict:
