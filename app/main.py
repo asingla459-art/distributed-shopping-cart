@@ -164,7 +164,8 @@ async def list_products(request: Request):
 # ---------------------------------------------------------------- cart
 async def get_cart(request: Request):
     p = require(request, "customer", "admin")
-    state = await carts.get(p["sub"])
+    mv = request.headers.get("x-min-version", "0")
+    state = await carts.get(p["sub"], int(mv) if mv.isdigit() else 0)
     return cart_response(await render_cart(state))
 
 

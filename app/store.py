@@ -201,10 +201,15 @@ class ConsistentCartStore:
         r.register_script("mutate", (LUA_DIR / "cart_mutate.lua").read_text())
         r.register_script("checkout", (LUA_DIR / "checkout.lua").read_text())
 
-    async def get(self, uid: str) -> dict:
+    async def get(self, uid: str, min_version: int = 0) -> dict:
+        """min_version is a session-consistency token: the client sends the
+        highest version it has seen, so the instance never serves it an older
+        cached cart (read-your-writes even if the invalidation is in flight)."""
         hit = self.cache.get(uid)
-        if hit is not None:
+        if hit is not None and hit["version"] >= min_version:
             return hit
+        if hit is not None:
+            METRICS.inc("cart_cache_stale_bypass_total")
         state = _parse_cart(await self.r.execute("HGETALL", cart_key(uid)))
         self.cache.put(uid, state)
         return state
@@ -266,7 +271,7 @@ class NaiveCartStore:
     def __init__(self, r: Redis, cache: L1Cache):
         self.r, self.cache = r, cache
 
-    async def get(self, uid: str) -> dict:
+    async def get(self, uid: str, min_version: int = 0) -> dict:
         hit = self.cache.get(uid)  # instance-local, never invalidated by other instances
         if hit is not None:
             return hit

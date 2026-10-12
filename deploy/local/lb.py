@@ -15,9 +15,12 @@ import asyncio
 import itertools
 import json
 import sys
+import os
 import time
+import zlib
 
 FAIL_TIMEOUT = 3.0
+POLICY = os.environ.get("LB_POLICY", "round-robin")  # or "user-hash"
 UPSTREAM_TIMEOUT = 10.0
 
 
@@ -27,8 +30,13 @@ class Upstreams:
         self.down_until = {a: 0.0 for a in self.addrs}
         self.rr = itertools.cycle(range(len(self.addrs)))
 
-    def order(self) -> list[tuple[str, int]]:
-        start = next(self.rr)
+    def order(self, affinity_key: str | None = None) -> list[tuple[str, int]]:
+        if POLICY == "user-hash" and affinity_key:
+            # same user -> same instance (better L1 cache hit ratio); on failure the
+            # ring continues to the next instance, like nginx `hash ... consistent`
+            start = zlib.crc32(affinity_key.encode()) % len(self.addrs)
+        else:
+            start = next(self.rr)
         ring = self.addrs[start:] + self.addrs[:start]
         now = time.time()
         up = [a for a in ring if self.down_until[a] <= now]
@@ -102,7 +110,8 @@ async def handle(ups: Upstreams, reader, writer) -> None:
                 break
             start, headers, body = req
             resp, tries = None, 0
-            for addr in ups.order():
+            auth = next((v for k, v in headers if k.lower() == "authorization"), None)
+            for addr in ups.order(auth):
                 tries += 1
                 try:
                     raw = await forward(addr, start, headers, body)
@@ -133,7 +142,7 @@ async def main() -> None:
     port = int(sys.argv[1])
     ups = Upstreams(sys.argv[2:])
     server = await asyncio.start_server(lambda r, w: handle(ups, r, w), "0.0.0.0", port, backlog=1024)
-    log("lb_started", port=port, upstreams=sys.argv[2:])
+    log("lb_started", port=port, upstreams=sys.argv[2:], policy=POLICY)
     async with server:
         await server.serve_forever()
 
