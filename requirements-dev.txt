@@ -1,0 +1,4 @@
+# Experiments, load tests and report charts
+-r requirements.txt
+requests==2.34.2
+matplotlib==3.11.2

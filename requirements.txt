@@ -1,7 +1,4 @@
-# Runtime dependencies (pinned). The Redis client is bundled (app/redis_client.py).
+# Runtime dependencies of the cart service and worker (the Redis client is bundled: app/redis_client.py)
 starlette==1.6.0
 uvicorn==0.53.0
 PyJWT==2.14.0
-# Experiments / reporting only
-requests==2.34.2
-matplotlib==3.11.2
