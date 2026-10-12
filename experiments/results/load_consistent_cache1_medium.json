@@ -1,0 +1,59 @@
+{
+  "label": "medium",
+  "users": 25,
+  "duration_s": 20.0,
+  "requests": 18749,
+  "throughput_rps": 936.8,
+  "success_rps": 905.7,
+  "p50_ms": 23.94,
+  "p95_ms": 55.35,
+  "p99_ms": 71.85,
+  "mean_ms": 26.64,
+  "server_errors_pct": 0.0,
+  "version_conflict_pct": 0.0,
+  "error_codes": {
+    "CART_EMPTY": 110,
+    "ITEM_NOT_IN_CART": 512
+  },
+  "statuses": {
+    "200": 17280,
+    "404": 512,
+    "201": 847,
+    "409": 110
+  },
+  "by_op": {
+    "get": {
+      "count": 9307,
+      "p50_ms": 20.66,
+      "p95_ms": 45.18
+    },
+    "add": {
+      "count": 5569,
+      "p50_ms": 29.71,
+      "p95_ms": 63.48
+    },
+    "set": {
+      "count": 1909,
+      "p50_ms": 28.48,
+      "p95_ms": 63.53
+    },
+    "remove": {
+      "count": 1007,
+      "p50_ms": 21.54,
+      "p95_ms": 46.4
+    },
+    "checkout": {
+      "count": 957,
+      "p50_ms": 27.46,
+      "p95_ms": 56.79
+    }
+  },
+  "lb_retried_requests": 0,
+  "idempotent_replays": 0,
+  "cache_hit_ratio_pct": 48.1,
+  "per_instance": {
+    "app-1": 6250,
+    "app-2": 6250,
+    "app-3": 6249
+  }
+}

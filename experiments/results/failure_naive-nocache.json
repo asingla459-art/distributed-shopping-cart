@@ -1,0 +1,452 @@
+{
+  "part_a": {
+    "experiment": "Instance failures under load",
+    "mode": "naive-nocache",
+    "users": 20,
+    "duration_s": 35,
+    "marks": [
+      {
+        "t": 8.01,
+        "event": "chaos crash_after_commit on app-2 (8 s)",
+        "status": 200
+      },
+      {
+        "t": 20.03,
+        "event": "SIGKILL app-3"
+      }
+    ],
+    "logical_adds_acknowledged": 26156,
+    "stored_total": 26160,
+    "users_with_wrong_cart": 3,
+    "net_wrong_units": 4,
+    "client_visible_failed_attempts": 0,
+    "requests_retried_by_lb": 43,
+    "idempotent_replays": 0,
+    "instance_crashes": 4,
+    "app3_back_in_rotation_after_s": 3.1,
+    "timeline": [
+      {
+        "t": 0,
+        "ok": 673,
+        "failed_attempts": 0,
+        "lb_retried": 0,
+        "replays": 0,
+        "by_instance": {
+          "app-1": 227,
+          "app-2": 220,
+          "app-3": 226
+        }
+      },
+      {
+        "t": 1,
+        "ok": 682,
+        "failed_attempts": 0,
+        "lb_retried": 0,
+        "replays": 0,
+        "by_instance": {
+          "app-3": 223,
+          "app-2": 238,
+          "app-1": 221
+        }
+      },
+      {
+        "t": 2,
+        "ok": 766,
+        "failed_attempts": 0,
+        "lb_retried": 0,
+        "replays": 0,
+        "by_instance": {
+          "app-3": 257,
+          "app-1": 260,
+          "app-2": 249
+        }
+      },
+      {
+        "t": 3,
+        "ok": 760,
+        "failed_attempts": 0,
+        "lb_retried": 0,
+        "replays": 0,
+        "by_instance": {
+          "app-3": 249,
+          "app-1": 256,
+          "app-2": 255
+        }
+      },
+      {
+        "t": 4,
+        "ok": 646,
+        "failed_attempts": 0,
+        "lb_retried": 0,
+        "replays": 0,
+        "by_instance": {
+          "app-2": 213,
+          "app-3": 217,
+          "app-1": 216
+        }
+      },
+      {
+        "t": 5,
+        "ok": 650,
+        "failed_attempts": 0,
+        "lb_retried": 0,
+        "replays": 0,
+        "by_instance": {
+          "app-2": 222,
+          "app-1": 216,
+          "app-3": 212
+        }
+      },
+      {
+        "t": 6,
+        "ok": 667,
+        "failed_attempts": 0,
+        "lb_retried": 0,
+        "replays": 0,
+        "by_instance": {
+          "app-3": 226,
+          "app-2": 216,
+          "app-1": 225
+        }
+      },
+      {
+        "t": 7,
+        "ok": 802,
+        "failed_attempts": 0,
+        "lb_retried": 0,
+        "replays": 0,
+        "by_instance": {
+          "app-3": 275,
+          "app-2": 266,
+          "app-1": 261
+        }
+      },
+      {
+        "t": 8,
+        "ok": 813,
+        "failed_attempts": 0,
+        "lb_retried": 5,
+        "replays": 0,
+        "by_instance": {
+          "app-1": 272,
+          "app-3": 416,
+          "app-2": 125
+        }
+      },
+      {
+        "t": 9,
+        "ok": 763,
+        "failed_attempts": 0,
+        "lb_retried": 0,
+        "replays": 0,
+        "by_instance": {
+          "app-1": 253,
+          "app-3": 510
+        }
+      },
+      {
+        "t": 10,
+        "ok": 646,
+        "failed_attempts": 0,
+        "lb_retried": 0,
+        "replays": 0,
+        "by_instance": {
+          "app-1": 220,
+          "app-3": 426
+        }
+      },
+      {
+        "t": 11,
+        "ok": 705,
+        "failed_attempts": 0,
+        "lb_retried": 14,
+        "replays": 0,
+        "by_instance": {
+          "app-1": 235,
+          "app-3": 470
+        }
+      },
+      {
+        "t": 12,
+        "ok": 879,
+        "failed_attempts": 0,
+        "lb_retried": 0,
+        "replays": 0,
+        "by_instance": {
+          "app-1": 287,
+          "app-3": 592
+        }
+      },
+      {
+        "t": 13,
+        "ok": 688,
+        "failed_attempts": 0,
+        "lb_retried": 0,
+        "replays": 0,
+        "by_instance": {
+          "app-1": 230,
+          "app-3": 458
+        }
+      },
+      {
+        "t": 14,
+        "ok": 602,
+        "failed_attempts": 0,
+        "lb_retried": 18,
+        "replays": 0,
+        "by_instance": {
+          "app-3": 398,
+          "app-1": 204
+        }
+      },
+      {
+        "t": 15,
+        "ok": 624,
+        "failed_attempts": 0,
+        "lb_retried": 0,
+        "replays": 0,
+        "by_instance": {
+          "app-1": 211,
+          "app-3": 413
+        }
+      },
+      {
+        "t": 16,
+        "ok": 588,
+        "failed_attempts": 0,
+        "lb_retried": 0,
+        "replays": 0,
+        "by_instance": {
+          "app-1": 198,
+          "app-3": 390
+        }
+      },
+      {
+        "t": 17,
+        "ok": 530,
+        "failed_attempts": 0,
+        "lb_retried": 0,
+        "replays": 0,
+        "by_instance": {
+          "app-3": 306,
+          "app-1": 168,
+          "app-2": 56
+        }
+      },
+      {
+        "t": 18,
+        "ok": 769,
+        "failed_attempts": 0,
+        "lb_retried": 0,
+        "replays": 0,
+        "by_instance": {
+          "app-2": 254,
+          "app-1": 259,
+          "app-3": 256
+        }
+      },
+      {
+        "t": 19,
+        "ok": 849,
+        "failed_attempts": 0,
+        "lb_retried": 0,
+        "replays": 0,
+        "by_instance": {
+          "app-2": 293,
+          "app-3": 280,
+          "app-1": 276
+        }
+      },
+      {
+        "t": 20,
+        "ok": 854,
+        "failed_attempts": 0,
+        "lb_retried": 6,
+        "replays": 0,
+        "by_instance": {
+          "app-3": 8,
+          "app-1": 562,
+          "app-2": 284
+        }
+      },
+      {
+        "t": 21,
+        "ok": 847,
+        "failed_attempts": 0,
+        "lb_retried": 0,
+        "replays": 0,
+        "by_instance": {
+          "app-1": 564,
+          "app-2": 283
+        }
+      },
+      {
+        "t": 22,
+        "ok": 691,
+        "failed_attempts": 0,
+        "lb_retried": 0,
+        "replays": 0,
+        "by_instance": {
+          "app-1": 460,
+          "app-2": 231
+        }
+      },
+      {
+        "t": 23,
+        "ok": 803,
+        "failed_attempts": 0,
+        "lb_retried": 0,
+        "replays": 0,
+        "by_instance": {
+          "app-2": 260,
+          "app-1": 286,
+          "app-3": 257
+        }
+      },
+      {
+        "t": 24,
+        "ok": 864,
+        "failed_attempts": 0,
+        "lb_retried": 0,
+        "replays": 0,
+        "by_instance": {
+          "app-3": 286,
+          "app-2": 294,
+          "app-1": 284
+        }
+      },
+      {
+        "t": 25,
+        "ok": 869,
+        "failed_attempts": 0,
+        "lb_retried": 0,
+        "replays": 0,
+        "by_instance": {
+          "app-3": 287,
+          "app-1": 293,
+          "app-2": 289
+        }
+      },
+      {
+        "t": 26,
+        "ok": 722,
+        "failed_attempts": 0,
+        "lb_retried": 0,
+        "replays": 0,
+        "by_instance": {
+          "app-1": 237,
+          "app-2": 240,
+          "app-3": 245
+        }
+      },
+      {
+        "t": 27,
+        "ok": 714,
+        "failed_attempts": 0,
+        "lb_retried": 0,
+        "replays": 0,
+        "by_instance": {
+          "app-2": 233,
+          "app-3": 236,
+          "app-1": 245
+        }
+      },
+      {
+        "t": 28,
+        "ok": 691,
+        "failed_attempts": 0,
+        "lb_retried": 0,
+        "replays": 0,
+        "by_instance": {
+          "app-1": 229,
+          "app-3": 229,
+          "app-2": 233
+        }
+      },
+      {
+        "t": 29,
+        "ok": 861,
+        "failed_attempts": 0,
+        "lb_retried": 0,
+        "replays": 0,
+        "by_instance": {
+          "app-2": 286,
+          "app-1": 289,
+          "app-3": 286
+        }
+      },
+      {
+        "t": 30,
+        "ok": 744,
+        "failed_attempts": 0,
+        "lb_retried": 0,
+        "replays": 0,
+        "by_instance": {
+          "app-3": 251,
+          "app-2": 248,
+          "app-1": 245
+        }
+      },
+      {
+        "t": 31,
+        "ok": 878,
+        "failed_attempts": 0,
+        "lb_retried": 0,
+        "replays": 0,
+        "by_instance": {
+          "app-3": 295,
+          "app-2": 292,
+          "app-1": 291
+        }
+      },
+      {
+        "t": 32,
+        "ok": 847,
+        "failed_attempts": 0,
+        "lb_retried": 0,
+        "replays": 0,
+        "by_instance": {
+          "app-1": 280,
+          "app-2": 287,
+          "app-3": 280
+        }
+      },
+      {
+        "t": 33,
+        "ok": 803,
+        "failed_attempts": 0,
+        "lb_retried": 0,
+        "replays": 0,
+        "by_instance": {
+          "app-3": 265,
+          "app-1": 276,
+          "app-2": 262
+        }
+      },
+      {
+        "t": 34,
+        "ok": 846,
+        "failed_attempts": 0,
+        "lb_retried": 0,
+        "replays": 0,
+        "by_instance": {
+          "app-3": 280,
+          "app-1": 277,
+          "app-2": 289
+        }
+      },
+      {
+        "t": 35,
+        "ok": 20,
+        "failed_attempts": 0,
+        "lb_retried": 0,
+        "replays": 0,
+        "by_instance": {
+          "app-2": 2,
+          "app-3": 10,
+          "app-1": 8
+        }
+      }
+    ]
+  }
+}

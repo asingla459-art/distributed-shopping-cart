@@ -1,0 +1,48 @@
+[
+  {
+    "experiment": "E1 lost updates",
+    "acknowledged_adds": 600,
+    "expected_qty": 600,
+    "stored_qty": 101,
+    "lost_updates": 499,
+    "lost_pct": 83.17,
+    "duration_s": 0.78
+  },
+  {
+    "experiment": "E2 overselling",
+    "initial_stock": 5,
+    "buyers": 20,
+    "orders_created": 20,
+    "rejected_out_of_stock": 0,
+    "oversold_units": 15,
+    "final_stock_in_redis": 1
+  },
+  {
+    "experiment": "E3 stale reads",
+    "reads": 300,
+    "stale_reads": 0,
+    "stale_pct": 0.0,
+    "max_versions_behind": 0
+  },
+  {
+    "experiment": "E3 stale reads (with X-Min-Version token)",
+    "reads": 300,
+    "stale_reads": 0,
+    "stale_pct": 0.0,
+    "max_versions_behind": 0
+  },
+  {
+    "experiment": "E4 duplicate retries",
+    "logical_adds": 200,
+    "requests_sent": 400,
+    "stored_qty": 400,
+    "duplicates_applied": 200,
+    "replays_detected": 0
+  },
+  {
+    "experiment": "E5 concurrent quantity edits",
+    "rounds": 50,
+    "silent_overwrites": 50,
+    "conflicts_reported_409": 0
+  }
+]
