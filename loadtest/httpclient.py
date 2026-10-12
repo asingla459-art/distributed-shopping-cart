@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import os
 import time
 from dataclasses import dataclass
 
@@ -23,8 +24,12 @@ class Resp:
         return json.loads(self.body) if self.body else None
 
 
+HOST = os.environ.get("TARGET_HOST", "127.0.0.1")   # e.g. TARGET_HOST=<vm-public-ip> TARGET_PORT=80
+PORT = int(os.environ.get("TARGET_PORT", "8080"))
+
+
 class Client:
-    def __init__(self, host: str = "127.0.0.1", port: int = 8080, timeout: float = 15.0):
+    def __init__(self, host: str = HOST, port: int = PORT, timeout: float = 15.0):
         self.host, self.port, self.timeout = host, port, timeout
         self.r = self.w = None
         self.token: str | None = None
@@ -77,7 +82,7 @@ class Client:
         return Resp(status, headers, body, (time.perf_counter() - t0) * 1000)
 
 
-async def new_user(prefix: str, i: int, host="127.0.0.1", port=8080) -> Client:
+async def new_user(prefix: str, i: int, host=HOST, port=PORT) -> Client:
     c = Client(host, port)
     name = f"{prefix}{i}"
     r = await c.request("POST", "/api/v1/auth/register", {"username": name, "password": "password-123"})
@@ -88,7 +93,7 @@ async def new_user(prefix: str, i: int, host="127.0.0.1", port=8080) -> Client:
     return c
 
 
-async def login(username: str, password: str, host="127.0.0.1", port=8080) -> Client:
+async def login(username: str, password: str, host=HOST, port=PORT) -> Client:
     c = Client(host, port)
     r = await c.request("POST", "/api/v1/auth/login", {"username": username, "password": password})
     c.token = r.json()["token"]

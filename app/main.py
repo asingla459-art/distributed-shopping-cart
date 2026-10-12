@@ -319,8 +319,6 @@ async def set_chaos(request: Request):
 async def app_middleware(request: Request, call_next):
     rid = request.headers.get("x-request-id") or uuid.uuid4().hex[:12]
     t0 = time.perf_counter()
-    route = request.scope.get("route")
-    path_tpl = getattr(route, "path", request.url.path)
     if chaos.get("mode") == "latency":
         await asyncio.sleep(chaos.get("latency_ms", 0) / 1000)
     try:
@@ -343,8 +341,9 @@ async def app_middleware(request: Request, call_next):
         log.exception("unhandled_error", extra={"fields": {"request_id": rid}})
         resp = JSONResponse({"error": "INTERNAL", "message": str(e)}, 500)
     dt = time.perf_counter() - t0
-    route = request.scope.get("route")
-    path_tpl = getattr(route, "path", path_tpl)
+    path_tpl = request.url.path
+    for k, v in (request.scope.get("path_params") or {}).items():  # low-cardinality route label
+        path_tpl = path_tpl.replace(f"/{v}", f"/{{{k}}}")
     METRICS.inc("cart_http_requests_total", method=request.method, route=path_tpl,
                 status=str(resp.status_code))
     METRICS.observe(f"{request.method} {path_tpl}", dt)
