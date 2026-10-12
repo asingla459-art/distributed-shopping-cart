@@ -1,0 +1,305 @@
+openapi: 3.0.3
+info:
+  title: Distributed Shopping Cart Consistency System
+  version: 1.0.0
+  description: >
+    Cart service running as several stateless instances behind a load balancer.
+    Writes are atomic, versioned (ETag / If-Match) and idempotent (Idempotency-Key).
+servers:
+  - url: http://localhost:8080/api/v1
+    description: local cluster
+  - url: http://{host}/api/v1
+    description: cloud deployment
+    variables:
+      host: {default: your-vm-public-ip}
+security:
+  - bearer: []
+tags:
+  - {name: auth}
+  - {name: products}
+  - {name: cart}
+  - {name: orders}
+  - {name: admin}
+  - {name: ops}
+
+paths:
+  /auth/register:
+    post:
+      tags: [auth]
+      security: []
+      summary: Create a customer account
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/Credentials'}}}}
+      responses:
+        '201': {description: created, content: {application/json: {schema: {$ref: '#/components/schemas/AuthResult'}}}}
+        '409': {$ref: '#/components/responses/Error'}
+        '422': {$ref: '#/components/responses/Error'}
+  /auth/login:
+    post:
+      tags: [auth]
+      security: []
+      summary: Obtain a JWT
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/Credentials'}}}}
+      responses:
+        '200': {description: ok, content: {application/json: {schema: {$ref: '#/components/schemas/AuthResult'}}}}
+        '401': {$ref: '#/components/responses/Error'}
+  /products:
+    get:
+      tags: [products]
+      security: []
+      summary: List the catalogue
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  products: {type: array, items: {$ref: '#/components/schemas/Product'}}
+    post:
+      tags: [products]
+      summary: Create or update a product (admin)
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/Product'}}}}
+      responses:
+        '201': {description: saved, content: {application/json: {schema: {$ref: '#/components/schemas/Product'}}}}
+        '403': {$ref: '#/components/responses/Error'}
+  /cart:
+    get:
+      tags: [cart]
+      summary: Current cart; ETag carries the version
+      parameters:
+        - {name: X-Min-Version, in: header, required: false, schema: {type: integer}, description: read-your-writes token}
+      responses:
+        '200': {$ref: '#/components/responses/Cart'}
+    delete:
+      tags: [cart]
+      summary: Empty the cart
+      parameters: [{$ref: '#/components/parameters/IfMatchOptional'}, {$ref: '#/components/parameters/IdempotencyKey'}]
+      responses:
+        '200': {$ref: '#/components/responses/Cart'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /cart/items:
+    post:
+      tags: [cart]
+      summary: Add quantity of a product (atomic increment)
+      parameters: [{$ref: '#/components/parameters/IfMatchOptional'}, {$ref: '#/components/parameters/IdempotencyKey'}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [sku, qty]
+              properties:
+                sku: {type: string, example: SKU-TSHIRT}
+                qty: {type: integer, minimum: 1, maximum: 1000, example: 2}
+      responses:
+        '200': {$ref: '#/components/responses/Cart'}
+        '404': {$ref: '#/components/responses/Error'}
+        '409': {$ref: '#/components/responses/Conflict'}
+        '422': {$ref: '#/components/responses/Error'}
+  /cart/items/{sku}:
+    parameters:
+      - {name: sku, in: path, required: true, schema: {type: string}}
+    put:
+      tags: [cart]
+      summary: Set the absolute quantity of a line (If-Match required)
+      parameters: [{$ref: '#/components/parameters/IfMatch'}, {$ref: '#/components/parameters/IdempotencyKey'}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {type: object, required: [qty], properties: {qty: {type: integer, minimum: 0, maximum: 1000}}}
+      responses:
+        '200': {$ref: '#/components/responses/Cart'}
+        '409': {$ref: '#/components/responses/Conflict'}
+        '428': {$ref: '#/components/responses/Error'}
+    delete:
+      tags: [cart]
+      summary: Remove a line
+      parameters: [{$ref: '#/components/parameters/IfMatchOptional'}, {$ref: '#/components/parameters/IdempotencyKey'}]
+      responses:
+        '200': {$ref: '#/components/responses/Cart'}
+        '404': {$ref: '#/components/responses/Error'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /cart/checkout:
+    post:
+      tags: [cart]
+      summary: Atomic checkout (version check + stock reservation + order creation)
+      parameters: [{$ref: '#/components/parameters/IfMatch'}, {$ref: '#/components/parameters/IdempotencyKey'}]
+      responses:
+        '201':
+          description: order created
+          headers:
+            Location: {schema: {type: string}}
+            Idempotent-Replayed: {schema: {type: string}}
+          content: {application/json: {schema: {$ref: '#/components/schemas/CheckoutResult'}}}
+        '409': {$ref: '#/components/responses/Error'}
+        '428': {$ref: '#/components/responses/Error'}
+  /orders:
+    get:
+      tags: [orders]
+      summary: Own orders, newest first
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema: {type: object, properties: {orders: {type: array, items: {$ref: '#/components/schemas/Order'}}}}
+  /orders/{order_id}:
+    get:
+      tags: [orders]
+      summary: One order
+      parameters: [{name: order_id, in: path, required: true, schema: {type: string}}]
+      responses:
+        '200': {description: ok, content: {application/json: {schema: {$ref: '#/components/schemas/Order'}}}}
+        '404': {$ref: '#/components/responses/Error'}
+  /admin/cluster:
+    get:
+      tags: [admin]
+      summary: Live instances, Redis replication state, cluster counters (admin/service)
+      responses: {'200': {description: ok}, '403': {$ref: '#/components/responses/Error'}}
+  /admin/events:
+    get:
+      tags: [admin]
+      summary: Audit stream of cart changes (admin/service)
+      parameters:
+        - {name: count, in: query, schema: {type: integer, default: 20, maximum: 500}}
+        - {name: user, in: query, schema: {type: string}}
+      responses: {'200': {description: ok}}
+  /admin/carts/{user_id}:
+    get:
+      tags: [admin]
+      summary: Raw Redis hash and TTL of a cart (admin/service)
+      parameters: [{name: user_id, in: path, required: true, schema: {type: string}}]
+      responses: {'200': {description: ok}}
+  /admin/chaos:
+    post:
+      tags: [admin]
+      summary: Failure injection (admin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                instance: {type: string, default: all, example: app-2}
+                mode: {type: string, enum: ['off', crash_after_commit, latency, crash_now]}
+                probability: {type: number, default: 1.0}
+                latency_ms: {type: integer, default: 0}
+                ttl_seconds: {type: integer, default: 120}
+      responses: {'200': {description: configured}}
+  /health:
+    get:
+      tags: [ops]
+      security: []
+      servers: [{url: http://localhost:8080}]
+      summary: Liveness + Redis connectivity
+      responses: {'200': {description: healthy}, '503': {description: Redis unreachable}}
+  /metrics:
+    get:
+      tags: [ops]
+      security: []
+      servers: [{url: http://localhost:8080}]
+      summary: Prometheus metrics of the instance that answered
+      responses: {'200': {description: text/plain exposition format}}
+
+components:
+  securitySchemes:
+    bearer: {type: http, scheme: bearer, bearerFormat: JWT}
+  parameters:
+    IfMatch:
+      {name: If-Match, in: header, required: true, schema: {type: string, example: '"3"'}, description: cart version from the ETag}
+    IfMatchOptional:
+      {name: If-Match, in: header, required: false, schema: {type: string, example: '"3"'}}
+    IdempotencyKey:
+      {name: Idempotency-Key, in: header, required: false, schema: {type: string, minLength: 8, maxLength: 100}}
+  responses:
+    Cart:
+      description: cart after the operation
+      headers:
+        ETag: {schema: {type: string}, description: cart version}
+        Idempotent-Replayed: {schema: {type: string}}
+        X-Instance: {schema: {type: string}}
+      content: {application/json: {schema: {$ref: '#/components/schemas/Cart'}}}
+    Conflict:
+      description: VERSION_CONFLICT - body includes the current cart
+      headers: {ETag: {schema: {type: string}}}
+      content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}
+    Error:
+      description: error
+      content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}
+  schemas:
+    Credentials:
+      type: object
+      required: [username, password]
+      properties:
+        username: {type: string, pattern: '^[A-Za-z0-9_.-]{3,32}$'}
+        password: {type: string, minLength: 8}
+    AuthResult:
+      type: object
+      properties:
+        id: {type: string}
+        username: {type: string}
+        role: {type: string, enum: [customer, admin, service]}
+        token: {type: string}
+        expires_in: {type: integer}
+    Product:
+      type: object
+      required: [sku, name, price_cents, stock]
+      properties:
+        sku: {type: string}
+        name: {type: string}
+        price_cents: {type: integer}
+        stock: {type: integer}
+    CartLine:
+      type: object
+      properties:
+        sku: {type: string}
+        name: {type: string}
+        qty: {type: integer}
+        unit_price_cents: {type: integer}
+        line_total_cents: {type: integer}
+    Cart:
+      type: object
+      properties:
+        version: {type: integer}
+        items: {type: array, items: {$ref: '#/components/schemas/CartLine'}}
+        item_count: {type: integer}
+        total_cents: {type: integer}
+        updated_at: {type: string, description: epoch milliseconds}
+    OrderLine:
+      type: object
+      properties:
+        sku: {type: string}
+        name: {type: string}
+        qty: {type: integer}
+        price_cents: {type: integer}
+    CheckoutResult:
+      type: object
+      properties:
+        order_id: {type: string}
+        status: {type: string, enum: [PENDING]}
+        total_cents: {type: integer}
+        cart_version: {type: integer}
+        items: {type: array, items: {$ref: '#/components/schemas/OrderLine'}}
+    Order:
+      type: object
+      properties:
+        id: {type: string}
+        user: {type: string}
+        status: {type: string, enum: [PENDING, CONFIRMED]}
+        total_cents: {type: integer}
+        items: {type: array, items: {$ref: '#/components/schemas/OrderLine'}}
+        cart_version: {type: string}
+        created_by: {type: string}
+        confirmed_by: {type: string}
+        created_at: {type: string}
+        confirmed_at: {type: string}
+    Error:
+      type: object
+      properties:
+        error: {type: string}
+        message: {type: string}
+        current: {$ref: '#/components/schemas/Cart'}

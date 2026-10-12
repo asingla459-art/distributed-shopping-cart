@@ -1,0 +1,164 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Architecture</title>
+<style>
+  body{margin:0;background:#fcfcfb;font-family:"Inter","Segoe UI",Arial,sans-serif}
+  svg text{font-family:inherit}
+  .t{font-size:15px;font-weight:700;fill:#0b0b0b}
+  .s{font-size:12px;fill:#52514e}
+  .m{font-size:11.5px;fill:#0b0b0b;font-family:"JetBrains Mono",Consolas,monospace}
+  .lbl{font-size:11.5px;fill:#33322f}
+  .box{fill:#ffffff;stroke:#c9c7c0;stroke-width:1.5}
+  .zone{fill:none;stroke:#9a978d;stroke-width:1.2;stroke-dasharray:6 5}
+  .a{stroke:#33322f;stroke-width:1.6;fill:none;marker-end:url(#ah)}
+  .ab{stroke:#2a78d6;stroke-width:1.6;fill:none;marker-end:url(#ahb)}
+  .ag{stroke:#1baf7a;stroke-width:1.6;fill:none;marker-end:url(#ahg);stroke-dasharray:5 4}
+</style></head>
+<body>
+<svg width="1460" height="860" viewBox="0 0 1460 860" xmlns="http://www.w3.org/2000/svg">
+<defs>
+  <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#33322f"/></marker>
+  <marker id="ahb" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#2a78d6"/></marker>
+  <marker id="ahg" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#1baf7a"/></marker>
+</defs>
+
+<text x="30" y="38" class="t" style="font-size:21px">Distributed Shopping Cart Consistency System — cloud architecture</text>
+<text x="30" y="60" class="s">All application instances are stateless; Redis is the single source of truth for cart state. Every cart write is one atomic, versioned, idempotent Lua script.</text>
+
+<!-- cloud zone -->
+<rect x="215" y="85" width="1225" height="755" rx="14" class="zone"/>
+<text x="232" y="108" class="s" style="font-weight:600">Cloud VPC (e.g. AWS EC2 / Azure VM / GCP Compute Engine running docker compose)</text>
+
+<!-- users -->
+<rect x="20" y="230" width="170" height="92" rx="10" class="box"/>
+<text x="38" y="258" class="t">Customers</text>
+<text x="38" y="278" class="s">web / mobile, many tabs</text>
+<text x="38" y="296" class="s">JWT role: customer</text>
+<text x="38" y="313" class="s">idempotent retries</text>
+
+<rect x="20" y="420" width="170" height="78" rx="10" class="box"/>
+<text x="38" y="448" class="t">Admin / Ops</text>
+<text x="38" y="468" class="s">JWT role: admin</text>
+<text x="38" y="486" class="s">products, chaos, cluster</text>
+
+<rect x="20" y="560" width="170" height="78" rx="10" class="box"/>
+<text x="38" y="588" class="t">Monitoring</text>
+<text x="38" y="608" class="s">JWT role: service</text>
+<text x="38" y="626" class="s">scrapes /metrics</text>
+
+<!-- LB -->
+<rect x="250" y="300" width="190" height="200" rx="10" class="box"/>
+<text x="268" y="328" class="t">Load balancer</text>
+<text x="268" y="347" class="s">nginx :80 (public)</text>
+<text x="268" y="372" class="lbl">• round-robin (or user hash)</text>
+<text x="268" y="392" class="lbl">• passive health check</text>
+<text x="268" y="410" class="lbl">  max_fails=1, 3 s</text>
+<text x="268" y="430" class="lbl">• retry next instance on</text>
+<text x="268" y="448" class="lbl">  error/timeout/502/503</text>
+<text x="268" y="468" class="lbl">• rate limit 200 r/s per IP</text>
+<text x="268" y="488" class="lbl">• X-Request-Id</text>
+
+<path d="M190,276 C222,276 222,360 246,360" class="a"/>
+<path d="M190,459 L246,440" class="a"/>
+<path d="M190,599 C222,599 222,480 246,480" class="a"/>
+<text x="196" y="226" class="lbl">HTTPS REST /api/v1</text>
+
+<!-- app instances -->
+<g>
+  <rect x="510" y="130" width="250" height="150" rx="10" class="box"/>
+  <text x="528" y="158" class="t">Cart service · app-1</text>
+  <text x="528" y="177" class="s">Starlette + uvicorn, stateless</text>
+  <text x="528" y="200" class="lbl">• JWT auth + RBAC</text>
+  <text x="528" y="219" class="lbl">• L1 cart cache (versioned)</text>
+  <text x="528" y="238" class="lbl">• JSON logs, /metrics, heartbeat</text>
+  <text x="528" y="257" class="lbl">• chaos hooks (failure tests)</text>
+</g>
+<g>
+  <rect x="510" y="325" width="250" height="150" rx="10" class="box"/>
+  <text x="528" y="353" class="t">Cart service · app-2</text>
+  <text x="528" y="372" class="s">identical container</text>
+  <text x="528" y="395" class="lbl">restart: unless-stopped</text>
+  <text x="528" y="414" class="lbl">(crash → auto restart in ~2 s)</text>
+</g>
+<g>
+  <rect x="510" y="520" width="250" height="150" rx="10" class="box"/>
+  <text x="528" y="548" class="t">Cart service · app-3</text>
+  <text x="528" y="567" class="s">identical container</text>
+  <text x="528" y="590" class="lbl">scale out: add app-N to</text>
+  <text x="528" y="609" class="lbl">the nginx upstream</text>
+</g>
+<path d="M440,360 C475,360 475,205 506,205" class="a"/>
+<path d="M440,400 L506,400" class="a"/>
+<path d="M440,440 C475,440 475,595 506,595" class="a"/>
+
+<!-- Redis primary -->
+<rect x="850" y="130" width="300" height="470" rx="10" class="box" style="stroke:#2a78d6;stroke-width:2"/>
+<text x="868" y="158" class="t">Redis 7 primary</text>
+<text x="868" y="177" class="s">NoSQL key-value · AOF everysec · noeviction</text>
+<text x="868" y="206" class="m">cart:{uid}        HASH  v, item:&lt;sku&gt;</text>
+<text x="868" y="224" class="s">  version counter, sliding TTL 7 d</text>
+<text x="868" y="248" class="m">idem:{uid}:&lt;key&gt;  STRING TTL 24 h</text>
+<text x="868" y="266" class="s">  stored response → duplicate-safe retries</text>
+<text x="868" y="290" class="m">product:&lt;sku&gt;     HASH  price, stock</text>
+<text x="868" y="314" class="m">order:&lt;id&gt;        HASH  + orders:{uid} ZSET</text>
+<text x="868" y="338" class="m">user:&lt;id&gt;         HASH  + users:by_name</text>
+<text x="868" y="362" class="m">stream:cart-events STREAM (audit log)</text>
+<text x="868" y="386" class="m">stream:orders     STREAM (queue)</text>
+<text x="868" y="410" class="m">instance:&lt;id&gt;     heartbeat TTL 6 s</text>
+<text x="868" y="434" class="m">chaos:&lt;id&gt;        failure injection</text>
+<text x="868" y="458" class="m">PUB/SUB cart-invalidate</text>
+<rect x="866" y="478" width="268" height="104" rx="8" fill="#eef4fc" stroke="#2a78d6" stroke-width="1"/>
+<text x="880" y="500" class="t" style="font-size:13px">Lua scripts (atomic)</text>
+<text x="880" y="520" class="lbl">cart_mutate: idempotency → If-Match</text>
+<text x="880" y="537" class="lbl">  check → apply → v+1 → TTL → event</text>
+<text x="880" y="554" class="lbl">  → publish invalidation</text>
+<text x="880" y="571" class="lbl">checkout: version+stock+order, atomic</text>
+
+<path d="M760,200 C805,200 805,260 846,260" class="ab"/>
+<path d="M760,400 C805,400 805,330 846,330" class="ab"/>
+<path d="M760,590 C810,590 810,420 846,420" class="ab"/>
+<text x="770" y="188" class="lbl" style="fill:#2a78d6">EVALSHA</text>
+<path d="M846,458 C800,458 800,480 764,470" class="ag"/>
+<path d="M846,462 C800,470 800,280 764,272" class="ag"/>
+<path d="M846,466 C810,520 810,660 764,660" class="ag"/>
+<text x="772" y="712" class="lbl" style="fill:#14825b">pub/sub: evict stale L1 entries</text>
+
+<!-- replica -->
+<rect x="1220" y="130" width="200" height="120" rx="10" class="box"/>
+<text x="1238" y="158" class="t">Redis replica</text>
+<text x="1238" y="178" class="s">async replication, AOF</text>
+<text x="1238" y="200" class="lbl">hot standby: promote with</text>
+<text x="1238" y="218" class="lbl">REPLICAOF NO ONE</text>
+<text x="1238" y="236" class="lbl">(managed: auto failover)</text>
+<path d="M1150,190 L1216,190" class="a"/>
+
+<!-- worker -->
+<rect x="1220" y="300" width="200" height="150" rx="10" class="box"/>
+<text x="1238" y="328" class="t">Order worker</text>
+<text x="1238" y="348" class="s">consumer group order-workers</text>
+<text x="1238" y="371" class="lbl">XREADGROUP → confirm</text>
+<text x="1238" y="390" class="lbl">→ XACK</text>
+<text x="1238" y="409" class="lbl">XAUTOCLAIM orders of a</text>
+<text x="1238" y="428" class="lbl">dead worker (idle &gt; 10 s)</text>
+<path d="M1150,386 L1216,386" class="a"/>
+<text x="1160" y="378" class="lbl">orders</text>
+
+<!-- observability -->
+<rect x="1220" y="500" width="200" height="140" rx="10" class="box"/>
+<text x="1238" y="528" class="t">Logs &amp; metrics</text>
+<text x="1238" y="548" class="s">stdout JSON → docker logs /</text>
+<text x="1238" y="566" class="s">CloudWatch / Azure Monitor</text>
+<text x="1238" y="590" class="lbl">Prometheus /metrics:</text>
+<text x="1238" y="608" class="lbl">latency, conflicts, replays,</text>
+<text x="1238" y="626" class="lbl">cache hit ratio</text>
+<path d="M635,670 C640,790 1150,790 1216,612" class="a" style="stroke-dasharray:3 4"/><text x="1000" y="772" class="lbl">JSON logs + /metrics</text>
+
+<!-- legend -->
+<g transform="translate(250,752)">
+  <rect width="560" height="78" rx="8" fill="#ffffff" stroke="#e4e3df"/>
+  <path d="M16,24 L60,24" class="a"/><text x="70" y="28" class="lbl">HTTP request / data flow</text>
+  <path d="M16,50 L60,50" class="ab"/><text x="70" y="54" class="lbl">Redis commands (atomic Lua scripts)</text>
+  <path d="M290,24 L334,24" class="ag"/><text x="344" y="28" class="lbl">cache-invalidation messages</text>
+  <text x="290" y="54" class="lbl">{uid} = Redis Cluster hash tag (shard-ready)</text>
+</g>
+</svg>
+</body></html>
