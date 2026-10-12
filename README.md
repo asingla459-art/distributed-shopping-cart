@@ -56,6 +56,12 @@ report/              final project report
 
 ## Quick start
 
+**Easiest (GitHub Codespaces, Ubuntu or WSL): one command**
+```bash
+./start.sh      # installs what is missing, starts everything, runs tests + demo
+./stop.sh       # stops everything
+```
+
 **With Docker (cloud VM or laptop)**
 ```bash
 cp .env.example .env            # set JWT_SECRET and REDIS_PASSWORD
